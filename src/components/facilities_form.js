@@ -1,20 +1,15 @@
-// src/pages/FacilitiesFeedback.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './FacilitiesFeedback.css';
 import { db } from '../firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const questions = [
   "How do you rate the internet speed and connectivity on campus?",
-  "How satisfied are you with the availability of computers and technical equipment?",
-  "How well are the classroom facilities maintained?",
-  "How comfortable and suitable are the study areas and common rooms?",
-  "Are the restroom facilities adequate and well-maintained?",
-  "How would you rate the availability and quality of library resources?",
-  "Are the sports and recreational facilities satisfactory?",
-  "How effective is the campus security?",
-  "How clean and well-maintained is the campus environment?",
-  "Are the cafeteria and dining facilities up to your expectations?"
+  "How do you rate the availability of Wi-Fi in classrooms and common areas?",
+  "How do you rate the efficiency of processes like fee payment, attendance, and scholarship applications?",
+  "Are the administrative staff approachable and helpful?",
+  "How do you rate the cleanliness and maintenance of restrooms on campus?",
+  "Are there enough restrooms available to meet student needs?",
 ];
 
 const FacilitiesFeedback = () => {
@@ -23,12 +18,6 @@ const FacilitiesFeedback = () => {
     responses: Array(questions.length).fill(null),
     suggestions: ''
   });
-  const [userId, setUserId] = useState(null);
-
-  useEffect(() => {
-    const storedUserId = localStorage.getItem('loggedInUserId');
-    setUserId(storedUserId);
-  }, []);
 
   const handleInputChange = (index, value) => {
     const updatedResponses = [...formData.responses];
@@ -46,15 +35,9 @@ const FacilitiesFeedback = () => {
       return;
     }
 
-    if (!userId) {
-      alert("You must be logged in to submit feedback.");
-      return;
-    }
-
     try {
       await addDoc(collection(db, 'facilitiesFeedback'), {
         ...formData,
-        userId,
         submittedAt: Timestamp.now()
       });
 
@@ -69,10 +52,6 @@ const FacilitiesFeedback = () => {
       alert('Failed to submit feedback. Please try again.');
     }
   };
-
-  if (!userId) {
-    return <p style={{ textAlign: 'center', marginTop: '50px' }}>You must be logged in to access this form.</p>;
-  }
 
   return (
     <form onSubmit={handleSubmit} className="form-container">

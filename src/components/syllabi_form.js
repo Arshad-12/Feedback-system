@@ -141,9 +141,12 @@ function SyllabiForm() {
 
                 <Form.Group className="mb-4">
   <Form.Label className="tenth-question">
+  <strong style={{ color: 'black' }}>
     10. What specific areas of improvement or modifications would you recommend for revising the syllabi?
     <span className='text-danger'> *</span>
-  </Form.Label>
+  </strong>
+</Form.Label>
+
   <Form.Control
     as="textarea"
     rows={4}
