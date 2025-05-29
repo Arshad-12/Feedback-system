@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Table, Button, Alert } from 'react-bootstrap';
+import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
 import './SyllabiForm.css';
+
+// Firebase setup
+const db = getFirestore();
 
 function SyllabiForm() {
   const [displayform, setDisplay] = useState(true);
   const [recommendations, setRecommendations] = useState('');
+  // const [semester, setSemester] = useState('');
   const [error_msg, setErrorMsg] = useState('');
   const [responses, setResponses] = useState({});
   const [darkMode, setDarkMode] = useState(false);
@@ -47,21 +52,81 @@ function SyllabiForm() {
     return true;
   };
 
-  const formSubmit = (e) => {
+  /*
+  Previous approach (FLAT format - 1 document per subject):
+
+  const formSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      let existingEntries = JSON.parse(localStorage.getItem("syllabusFeedback")) || [];
-      const newEntry = {
-        id: existingEntries.length,
-        responses,
-        recommendations
-      };
-      existingEntries.push(newEntry);
-      localStorage.setItem("syllabusFeedback", JSON.stringify(existingEntries));
+
+    if (!validateForm()) {
+      setErrorMsg('Please fill all required fields before submitting.');
+      return;
+    }
+
+    try {
+      const studentId = auth.currentUser ? auth.currentUser.uid : `guest_${Date.now()}`;
+      const feedbackCollection = collection(db, 'syllabusFeedbackFlat');
+      const timestamp = Timestamp.now();
+
+      for (const subject of setNames) {
+        const subjectResponses = {};
+
+        for (const qKey of Object.keys(questions)) {
+          subjectResponses[qKey] = responses[qKey]?.[subject] || null;
+        }
+
+        await addDoc(feedbackCollection, {
+          subject,
+          responses: subjectResponses,
+          recommendations,
+          submittedAt: timestamp
+        });
+      }
+
       setDisplay(false);
       setErrorMsg('');
-    } else {
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      setErrorMsg("There was an error submitting your feedback. Please try again.");
+    }
+  };
+*/
+
+  const formSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
       setErrorMsg('Please fill all required fields before submitting.');
+      return;
+    }
+
+    try {
+      const feedbackCollection = collection(db, 'syllabusFeedbackNested');
+      const timestamp = Timestamp.now();
+
+      const subjects = {};
+      for (const subject of setNames) {
+        const subjectResponses = {};
+        for (const qKey of Object.keys(questions)) {
+          subjectResponses[qKey] = responses[qKey]?.[subject] || null;
+        }
+        subjects[subject] = { responses: subjectResponses };
+      }
+
+      const username = localStorage.getItem("username") || "unknown";
+
+      await addDoc(feedbackCollection, {
+        username,
+        recommendations,
+        subjects,
+        submittedAt: timestamp
+      });
+
+      setDisplay(false);
+      setErrorMsg('');
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      setErrorMsg("There was an error submitting your feedback. Please try again.");
     }
   };
 
@@ -140,24 +205,20 @@ function SyllabiForm() {
                 </div>
 
                 <Form.Group className="mb-4">
-  <Form.Label className="tenth-question">
-  <strong style={{ color: 'black' }}>
-    10. What specific areas of improvement or modifications would you recommend for revising the syllabi?
-    <span className='text-danger'> *</span>
-  </strong>
-</Form.Label>
-
-  <Form.Control
-    as="textarea"
-    rows={4}
-    className="syllabi-form-textarea"
-    value={recommendations}
-    onChange={e => setRecommendations(e.target.value)}
-    placeholder="Your suggestions here..."
-    required
-  />
-</Form.Group>
-
+                  <Form.Label className="tenth-question">
+                    10. What specific areas of improvement or modifications would you recommend for revising the syllabi?
+                    <span className='text-danger'> *</span>
+                  </Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    className="syllabi-form-textarea"
+                    value={recommendations}
+                    onChange={e => setRecommendations(e.target.value)}
+                    placeholder="Your suggestions here..."
+                    required
+                  />
+                </Form.Group>
 
                 {error_msg && <Alert variant="danger" className="syllabi-form-error">{error_msg}</Alert>}
 
@@ -170,7 +231,7 @@ function SyllabiForm() {
             <div className="syllabi-thanks-card">
               <h4>Thank you for your feedback!</h4>
               <p>We appreciate your valuable input towards improving our syllabi.</p>
-              <Button variant="success" onClick={() => window.location.reload()}>Submit Another Response</Button>
+              <Button variant="success">Generate Hall Ticket</Button>
             </div>
           )}
         </div>
